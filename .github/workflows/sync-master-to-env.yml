@@ -1,0 +1,31 @@
+name: Sync master to env branches
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-envs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync master to dev, qa and prod
+        run: |
+          for branch in dev qa prod; do
+            echo "Syncing master -> $branch"
+            git push --force-with-lease origin HEAD:refs/heads/$branch
+          done
