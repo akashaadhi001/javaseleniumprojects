@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   validate-and-sync:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,25 +26,27 @@ jobs:
           cache: maven
 
       - name: Install Chrome
+        shell: pwsh
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gnupg
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
+          $chromeUrl = "https://dl.google.com/chrome/install/latest/chrome_installer.exe"
+          Invoke-WebRequest -Uri $chromeUrl -OutFile "$env:TEMP\chrome_installer.exe"
+          Start-Process "$env:TEMP\chrome_installer.exe" -ArgumentList "/silent /install" -Wait
 
       - name: Build and test
-        run: mvn -B test
+        shell: pwsh
+        run: |
+          mvn -B test
 
       - name: Configure git
+        shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Sync master to dev, qa and prod
+        shell: pwsh
         run: |
-          for branch in dev qa prod; do
-            echo "Syncing master -> $branch"
+          foreach ($branch in @('dev','qa','prod')) {
+            Write-Host "Syncing master -> $branch"
             git push origin HEAD:refs/heads/$branch
-          done
+          }
