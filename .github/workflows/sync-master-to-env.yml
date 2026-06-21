@@ -1,4 +1,4 @@
-name: Sync master to env branches
+name: Validate and Sync master to env branches
 
 on:
   push:
@@ -10,13 +10,23 @@ permissions:
   contents: write
 
 jobs:
-  sync-envs:
+  validate-and-sync:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B test
 
       - name: Configure git
         run: |
@@ -27,5 +37,5 @@ jobs:
         run: |
           for branch in dev qa prod; do
             echo "Syncing master -> $branch"
-            git push --force-with-lease origin HEAD:refs/heads/$branch
+            git push origin HEAD:refs/heads/$branch
           done
